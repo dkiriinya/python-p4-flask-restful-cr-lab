@@ -16,12 +16,74 @@ db.init_app(app)
 
 api = Api(app)
 
+class Home(Resource):
+    def get(self):
+        response_dict = {
+            "message": "Welcome to the Plantsy RESTful API",
+        }
+
+        response = make_response(
+            response_dict,
+            200
+        )
+
+        return response
+
+api.add_resource(Home, '/')
+
 class Plants(Resource):
-    pass
+    def get(self):
+        response_dict_list = [n.to_dict() for n in Plant.query.all()]
+        
+        response = make_response(
+            response_dict_list,
+            200,
+        )
+
+        return response
+    
+    def post(self):
+        data = request.get_json()
+        new_record = Plant(
+            name= data['name'],
+            image= data['image'],
+            price = data['price'],
+        )
+        db.session.add(new_record)
+        db.session.commit()
+
+        response_dict = new_record.to_dict()
+
+        response = make_response(
+            response_dict,
+            201,
+        )
+
+        return response
+    
+api.add_resource(Plants, '/plants')
 
 class PlantByID(Resource):
-    pass
-        
+    def get(self, id):
+        plant = Plant.query.filter_by(id=id).first()
+
+        if plant is None:
+            response_dict = {
+                "message": "Plant not found",
+            }
+            status_code = 404
+        else:
+            response_dict = plant.to_dict()
+            status_code = 200
+
+        response = make_response(
+            response_dict,
+            status_code,
+        )
+
+        return response
+
+api.add_resource(PlantByID, '/plants/<int:id>')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
